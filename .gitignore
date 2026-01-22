@@ -5,6 +5,7 @@
 terraform.tfvars
 *.tfvars
 *.tfplan
+variables.tf
 
 # Ansible
 *.retry
