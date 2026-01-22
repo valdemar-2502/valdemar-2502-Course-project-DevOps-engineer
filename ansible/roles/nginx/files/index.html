@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure Project</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Infrastructure Project</h1>
+            <p>Welcome to the deployed web application</p>
+        </header>
+        
+        <main>
+            <section class="server-info">
+                <h2>Server Information</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3>Hostname</h3>
+                        <p id="hostname">Loading...</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>IP Address</h3>
+                        <p id="ipaddress">Loading...</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Uptime</h3>
+                        <p id="uptime">Loading...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="services">
+                <h2>Monitoring Services</h2>
+                <div class="services-grid">
+                    <a href="http://10.0.2.3:9090" class="service-card" target="_blank">
+                        <h3>📊 Prometheus</h3>
+                        <p>Metrics collection</p>
+                    </a>
+                    <a href="http://178.154.241.166:3000" class="service-card" target="_blank">
+                        <h3>📈 Grafana</h3>
+                        <p>Dashboards & visualization</p>
+                    </a>
+                    <a href="http://10.0.2.4:9200" class="service-card" target="_blank">
+                        <h3>🔍 Elasticsearch</h3>
+                        <p>Log storage</p>
+                    </a>
+                    <a href="http://178.154.224.134:5601" class="service-card" target="_blank">
+                        <h3>📋 Kibana</h3>
+                        <p>Log visualization</p>
+                    </a>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>Deployed with Ansible & Yandex Cloud</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Display server info
+        document.getElementById('hostname').textContent = window.location.hostname;
+        document.getElementById('ipaddress').textContent = window.location.hostname;
+        
+        // Simple uptime simulation
+        const startTime = Date.now();
+        function updateUptime() {
+            const uptimeMs = Date.now() - startTime;
+            const hours = Math.floor(uptimeMs / (1000 * 60 * 60));
+            const minutes = Math.floor((uptimeMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((uptimeMs % (1000 * 60)) / 1000);
+            document.getElementById('uptime').textContent = 
+                `${hours}h ${minutes}m ${seconds}s`;
+        }
+        setInterval(updateUptime, 1000);
+        updateUptime();
+    </script>
+</body>
+</html>

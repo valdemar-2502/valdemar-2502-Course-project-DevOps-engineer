@@ -1,0 +1,1568 @@
+=== СТРУКТУРА ДИРЕКТОРИЙ ===
+.
+./group_vars
+./host_vars
+./inventory
+./roles
+./roles/common
+./roles/common/files
+./roles/common/handlers
+./roles/common/tasks
+./roles/common/templates
+./roles/elasticsearch
+./roles/elasticsearch/files
+./roles/elasticsearch/handlers
+./roles/elasticsearch/tasks
+./roles/elasticsearch/templates
+./roles/filebeat
+./roles/filebeat/files
+./roles/filebeat/handlers
+./roles/filebeat/tasks
+./roles/filebeat/templates
+./roles/grafana
+./roles/grafana/files
+./roles/grafana/handlers
+./roles/grafana/tasks
+./roles/grafana/templates
+./roles/kibana
+./roles/kibana/files
+./roles/kibana/handlers
+./roles/kibana/tasks
+./roles/kibana/templates
+./roles/nat-gateway
+./roles/nat-gateway/files
+./roles/nat-gateway/tasks
+./roles/nat-gateway/templates
+./roles/nginx
+./roles/nginx/files
+./roles/nginx/handlers
+./roles/nginx-log-exporter
+./roles/nginx-log-exporter/files
+./roles/nginx-log-exporter/handlers
+./roles/nginx-log-exporter/tasks
+./roles/nginx-log-exporter/templates
+./roles/nginx/tasks
+./roles/nginx/templates
+./roles/node-exporter
+./roles/node-exporter/files
+./roles/node-exporter/handlers
+./roles/node-exporter/tasks
+./roles/node-exporter/templates
+./roles/prometheus
+./roles/prometheus/files
+./roles/prometheus/handlers
+./roles/prometheus/tasks
+./roles/prometheus/templates
+
+
+=== ФАЙЛЫ И ИХ СОДЕРЖИМОЕ ===
+
+
+=== Файл: ./site.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 785 байт
+--- Содержимое ---
+---
+- name: Configure Bastion host
+  hosts: bastion
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - nat-gateway
+
+- name: Configure Web Servers
+  hosts: webservers
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - nginx
+    - node-exporter
+    - nginx-log-exporter
+    - filebeat
+
+- name: Configure Prometheus
+  hosts: prometheus
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - prometheus
+
+- name: Configure Grafana
+  hosts: grafana
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - grafana
+
+- name: Configure Elasticsearch
+  hosts: elasticsearch
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - elasticsearch
+
+- name: Configure Kibana
+  hosts: kibana
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - kibana
+
+
+=== Файл: ./inventory/production.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 3123 байт
+--- Содержимое ---
+all:   
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_private_key_file: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa"
+    # Убираем глобальный ProxyCommand, будем настраивать на уровне групп
+    # ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+
+    # Service versions (using provided URLs)
+    elasticsearch_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/e/elasticsearch/elasticsearch-9.2.4-amd64.deb"
+    kibana_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/k/kibana/kibana-9.2.4-amd64.deb"
+    filebeat_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/f/filebeat/filebeat-9.2.4-amd64.deb"
+    grafana_deb_url: "https://mirror.yandex.ru/mirrors/packages.grafana.com/oss/deb/pool/main/g/grafana/grafana_12.3.1_20271043721_linux_amd64.deb"
+    node_exporter_deb_url: "https://mirror.yandex.ru/debian/pool/main/p/prometheus-node-exporter/prometheus-node-exporter_1.10.2-1_amd64.deb"
+    nginx_log_exporter_deb_url: "https://github.com/martin-helmich/prometheus-nginxlog-exporter/releases/download/v1.11.0/prometheus-nginxlog-exporter_1.11.0_linux_amd64.deb"
+    prometheus_deb_url: "https://mirror.yandex.ru/debian/pool/main/p/prometheus/prometheus_2.53.5+ds1-3_amd64.deb"
+
+    # Network variables (will be set from environment)
+    bastion_ip: "{{ lookup('env', 'BASTION_IP') }}"
+    web1_ip: "{{ lookup('env', 'WEB1_IP') }}"
+    web2_ip: "{{ lookup('env', 'WEB2_IP') }}"
+    prometheus_ip: "{{ lookup('env', 'PROMETHEUS_IP') }}"
+    elasticsearch_ip: "{{ lookup('env', 'ELASTICSEARCH_IP') }}"
+    grafana_ip: "{{ lookup('env', 'GRAFANA_IP') }}"
+    kibana_ip: "{{ lookup('env', 'KIBANA_IP') }}"
+
+  children:
+    bastion:
+      hosts:
+        bastion:
+          ansible_host: "{{ bastion_ip }}"
+
+    webservers:
+      hosts:
+        web-1:
+          ansible_host: "{{ web1_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        web-2:
+          ansible_host: "{{ web2_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+
+    monitoring:
+      hosts:
+        prometheus:
+          ansible_host: "{{ prometheus_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        grafana:
+          ansible_host: "{{ grafana_ip }}"
+          # Без ProxyCommand - публичный хост
+
+    logging:
+      hosts:
+        elasticsearch:
+          ansible_host: "{{ elasticsearch_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        kibana:
+          ansible_host: "{{ kibana_ip }}"
+          # Без ProxyCommand - публичный хост
+
+    private_hosts:
+      children:
+        webservers:
+        monitoring:
+          hosts:
+            prometheus:
+        logging:
+          hosts:
+            elasticsearch:
+
+    public_hosts:
+      children:
+        bastion:
+        monitoring:
+          hosts:
+            grafana:
+        logging:
+          hosts:
+            kibana:
+
+
+=== Файл: ./dump_contents.sh ===
+Разрешения: -rwxr-xr-x
+Владелец: root
+Размер: 1065 байт
+--- Содержимое ---
+#!/bin/bash
+OUTPUT_FILE="directory_dump.txt"
+echo "=== СТРУКТУРА ДИРЕКТОРИЙ ===" > $OUTPUT_FILE
+find . -type d | sort >> $OUTPUT_FILE
+
+echo -e "\n\n=== ФАЙЛЫ И ИХ СОДЕРЖИМОЕ ===" >> $OUTPUT_FILE
+find . -type f -name "*" | while read file; do
+    echo -e "\n\n=== Файл: $file ===" >> $OUTPUT_FILE
+    echo "Разрешения: $(ls -la "$file" | awk '{print $1}')" >> $OUTPUT_FILE
+    echo "Владелец: $(ls -la "$file" | awk '{print $3}')" >> $OUTPUT_FILE
+    echo "Размер: $(ls -la "$file" | awk '{print $5}') байт" >> $OUTPUT_FILE
+    echo "--- Содержимое ---" >> $OUTPUT_FILE
+    if [[ "$file" == *.yml ]] || [[ "$file" == *.yaml ]] || [[ "$file" == *.cfg ]] || [[ "$file" == *.txt ]] || [[ "$file" == *.ini ]]; then
+        cat "$file" >> $OUTPUT_FILE 2>/dev/null || echo "[бинарный файл или нет прав]" >> $OUTPUT_FILE
+    else
+        head -50 "$file" >> $OUTPUT_FILE 2>/dev/null || echo "[бинарный файл или нет прав]" >> $OUTPUT_FILE
+    fi
+done
+
+
+=== Файл: ./roles/prometheus/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1649 байт
+--- Содержимое ---
+---
+- name: Create Prometheus system user
+  user:
+    name: prometheus
+    system: yes
+    shell: /usr/sbin/nologin
+
+- name: Download Prometheus binary
+  get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v2.53.5/prometheus-2.53.5.linux-amd64.tar.gz"
+    dest: /tmp/prometheus.tar.gz
+    mode: '0644'
+
+- name: Extract Prometheus
+  unarchive:
+    src: /tmp/prometheus.tar.gz
+    dest: /tmp
+    remote_src: yes
+    creates: /tmp/prometheus-2.53.5.linux-amd64
+
+- name: Install Prometheus files
+  shell: |
+    cp /tmp/prometheus-2.53.5.linux-amd64/prometheus /usr/local/bin/prometheus
+    cp /tmp/prometheus-2.53.5.linux-amd64/promtool /usr/local/bin/promtool
+    chmod 755 /usr/local/bin/prometheus /usr/local/bin/promtool
+    chown prometheus:prometheus /usr/local/bin/prometheus /usr/local/bin/promtool
+  args:
+    creates: /usr/local/bin/prometheus
+
+- name: Create Prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  loop:
+    - /etc/prometheus
+    - /var/lib/prometheus
+    - /var/lib/prometheus/data
+
+- name: Configure Prometheus
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  notify: restart prometheus
+
+- name: Create Prometheus service file
+  copy:
+    src: prometheus.service
+    dest: /etc/systemd/system/prometheus.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - daemon-reload
+    - restart prometheus
+
+- name: Enable and start Prometheus
+  systemd:
+    name: prometheus
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/prometheus/templates/prometheus.yml.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 421 байт
+--- Содержимое ---
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+{% for job in prometheus_scrape_configs %}
+  - job_name: '{{ job.job_name }}'
+    static_configs:
+      - targets: {{ job.static_configs[0].targets | to_json }}
+{% endfor %}
+
+storage:
+  tsdb:
+    retention:
+      time: {{ prometheus_retention_time }}
+      size: {{ prometheus_storage_retention_size }}
+
+
+=== Файл: ./roles/prometheus/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 164 байт
+--- Содержимое ---
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/prometheus/files/prometheus.service ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 533 байт
+--- Содержимое ---
+[Unit]
+Description=Prometheus Monitoring System
+Documentation=https://prometheus.io/docs/introduction/overview/
+After=network.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+  --config.file=/etc/prometheus/prometheus.yml \
+  --storage.tsdb.path=/var/lib/prometheus/data \
+  --web.console.templates=/etc/prometheus/consoles \
+  --web.console.libraries=/etc/prometheus/console_libraries \
+  --web.listen-address=0.0.0.0:9090
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+
+=== Файл: ./roles/elasticsearch/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1445 байт
+--- Содержимое ---
+---
+- name: Install Java
+  apt:
+    name: openjdk-17-jdk
+    state: present
+
+- name: Download Elasticsearch package
+  get_url:
+    url: "{{ elasticsearch_deb_url }}"
+    dest: /tmp/{{ elasticsearch_package }}
+    mode: '0644'
+
+- name: Install Elasticsearch
+  apt:
+    deb: /tmp/{{ elasticsearch_package }}
+
+- name: Configure Elasticsearch
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+  notify: restart elasticsearch
+
+- name: Configure JVM options
+  copy:
+    dest: /etc/elasticsearch/jvm.options
+    content: |
+      {% for option in elasticsearch_jvm_options %}
+      {{ option }}
+      {% endfor %}
+  notify: restart elasticsearch
+
+- name: Enable and start Elasticsearch
+  systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started
+
+- name: Wait for Elasticsearch to start
+  wait_for:
+    port: 9200
+    delay: 10
+    timeout: 60
+
+- name: Create index template for nginx logs
+  uri:
+    url: "http://localhost:9200/_index_template/nginx-logs-template"
+    method: PUT
+    body_format: json
+    body:
+      index_patterns: ["nginx-logs-*"]
+      template:
+        settings:
+          number_of_shards: 1
+          number_of_replicas: 0
+        mappings:
+          properties:
+            "@timestamp":
+              type: date
+            message:
+              type: text
+            log_type:
+              type: keyword
+            host:
+              type: keyword
+    status_code: 200
+
+
+=== Файл: ./roles/elasticsearch/templates/elasticsearch.yml.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 295 байт
+--- Содержимое ---
+cluster.name: {{ elasticsearch_cluster_name }}
+node.name: {{ elasticsearch_node_name }}
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+network.host: {{ elasticsearch_network_host }}
+http.port: {{ elasticsearch_http_port }}
+discovery.type: {{ elasticsearch_discovery_type }}
+
+
+=== Файл: ./roles/elasticsearch/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 113 байт
+--- Содержимое ---
+---
+- name: restart elasticsearch
+  systemd:
+    name: elasticsearch
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/nat-gateway/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 904 байт
+--- Содержимое ---
+---
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Configure NAT with iptables
+  shell: |
+    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    iptables -A FORWARD -i eth0 -o eth0 -j ACCEPT
+    iptables-save > /etc/iptables/rules.v4
+
+- name: Wait for apt to be unlocked (nat-gateway)
+  shell: |
+    timeout 300 bash -c 'while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 1; done'
+  become: yes
+  register: apt_wait_nat
+  until: apt_wait_nat.rc == 0
+  retries: 10
+  delay: 30
+  ignore_errors: yes
+- name: Install iptables-persistent
+  apt:
+    name: iptables-persistent
+    state: present
+
+- name: Ensure iptables rules are loaded on boot
+  copy:
+    dest: /etc/rc.local
+    content: |
+      #!/bin/bash
+      iptables-restore < /etc/iptables/rules.v4
+      exit 0
+    mode: '0755'
+
+
+=== Файл: ./roles/kibana/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1046 байт
+--- Содержимое ---
+---
+- name: Download Kibana package
+  get_url:
+    url: "{{ kibana_deb_url }}"
+    dest: /tmp/{{ kibana_package }}
+    mode: '0644'
+
+- name: Install Kibana
+  apt:
+    deb: /tmp/{{ kibana_package }}
+
+- name: Configure Kibana
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+  notify: restart kibana
+
+- name: Create Kibana index patterns via API
+  uri:
+    url: "http://localhost:5601/api/saved_objects/index-pattern/nginx-logs"
+    method: POST
+    body_format: json
+    body:
+      attributes:
+        title: "{{ kibana_index_patterns[0].pattern }}"
+        timeFieldName: "{{ kibana_index_patterns[0].time_field }}"
+    status_code: 200
+  register: kibana_result
+  until: kibana_result.status == 200
+  retries: 10
+  delay: 5
+
+- name: Set default index pattern
+  uri:
+    url: "http://localhost:5601/api/kibana/settings/defaultIndex"
+    method: POST
+    body_format: json
+    body:
+      value: "nginx-logs"
+    status_code: 200
+
+- name: Enable and start Kibana
+  systemd:
+    name: kibana
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/kibana/templates/kibana.yml.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 178 байт
+--- Содержимое ---
+server.name: {{ kibana_server_name }}
+server.host: {{ kibana_server_host }}
+server.port: {{ kibana_server_port }}
+elasticsearch.hosts: {{ kibana_elasticsearch_hosts | to_json }}
+
+
+=== Файл: ./roles/kibana/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 156 байт
+--- Содержимое ---
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart kibana
+  systemd:
+    name: kibana
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/grafana/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1263 байт
+--- Содержимое ---
+---
+- name: Download Grafana package
+  get_url:
+    url: "{{ grafana_deb_url }}"
+    dest: /tmp/{{ grafana_package }}
+    mode: '0644'
+
+- name: Install Grafana
+  apt:
+    deb: /tmp/{{ grafana_package }}
+
+- name: Configure Grafana
+  template:
+    src: grafana.ini.j2
+    dest: /etc/grafana/grafana.ini
+  notify: restart grafana
+
+- name: Wait for Grafana to start
+  wait_for:
+    port: 3000
+    delay: 10
+    timeout: 60
+
+- name: Configure Grafana datasources via API
+  uri:
+    url: "http://localhost:3000/api/datasources"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body: "{{ item }}"
+    status_code: 200
+  loop: "{{ grafana_datasources }}"
+
+- name: Import Grafana dashboards
+  uri:
+    url: "http://localhost:3000/api/dashboards/db"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    body_format: json
+    body:
+      dashboard: "{{ lookup('url', item.url, split_lines=False) | from_json }}"
+      overwrite: true
+    status_code: 200
+  loop: "{{ grafana_dashboards }}"
+
+- name: Enable and start Grafana
+  systemd:
+    name: grafana-server
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/grafana/templates/grafana.ini.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 466 байт
+--- Содержимое ---
+[server]
+http_addr = 0.0.0.0
+http_port = {{ grafana_port }}
+domain = localhost
+root_url = http://localhost:3000
+
+[database]
+type = sqlite3
+path = grafana.db
+
+[security]
+admin_user = {{ grafana_admin_user }}
+admin_password = {{ grafana_admin_password }}
+
+[auth]
+disable_login_form = false
+disable_signout_menu = false
+
+[users]
+allow_sign_up = false
+auto_assign_org = true
+auto_assign_org_role = Viewer
+
+[analytics]
+reporting_enabled = false
+check_for_updates = false
+
+
+=== Файл: ./roles/grafana/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 158 байт
+--- Содержимое ---
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart grafana
+  systemd:
+    name: grafana
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/filebeat/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 910 байт
+--- Содержимое ---
+---
+- name: Download Filebeat package
+  get_url:
+    url: "{{ filebeat_deb_url }}"
+    dest: /tmp/{{ filebeat_package }}
+    mode: '0644'
+
+- name: Install Filebeat
+  apt:
+    deb: /tmp/{{ filebeat_package }}
+
+- name: Configure Filebeat
+  template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+  notify: restart filebeat
+
+- name: Enable nginx module
+  copy:
+    dest: /etc/filebeat/modules.d/nginx.yml
+    content: |
+      - module: nginx
+        access:
+          enabled: true
+          var.paths: ["/var/log/nginx/access.log"]
+        error:
+          enabled: true
+          var.paths: ["/var/log/nginx/error.log"]
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart filebeat
+
+- name: Setup Filebeat index template
+  command: filebeat setup --index-management
+  become: yes
+
+- name: Enable and start Filebeat
+  systemd:
+    name: filebeat
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/filebeat/templates/filebeat.yml.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 509 байт
+--- Содержимое ---
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/nginx/access.log
+    fields:
+      log_type: "nginx_access"
+    fields_under_root: true
+  
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/nginx/error.log
+    fields:
+      log_type: "nginx_error"
+    fields_under_root: true
+
+output.elasticsearch:
+  hosts: ["{{ elasticsearch_ip }}:{{ elasticsearch_port }}"]
+  index: "nginx-logs-%{+yyyy.MM.dd}"
+
+setup.template.name: "nginx-logs"
+setup.template.pattern: "nginx-logs-*"
+
+
+=== Файл: ./roles/filebeat/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 103 байт
+--- Содержимое ---
+---
+- name: restart filebeat
+  systemd:
+    name: filebeat
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/nginx-log-exporter/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 769 байт
+--- Содержимое ---
+---
+- name: Download Nginx Log Exporter package
+  get_url:
+    url: "{{ nginx_log_exporter_deb_url }}"
+    dest: /tmp/{{ nginx_log_exporter_package }}
+    mode: '0644'
+
+- name: Install Nginx Log Exporter
+  apt:
+    deb: /tmp/{{ nginx_log_exporter_package }}
+
+- name: Create Nginx Log Exporter configuration
+  template:
+    src: nginx-log-exporter.hcl.j2
+    dest: /etc/nginx-log-exporter.hcl
+  notify: restart nginx-log-exporter
+
+- name: Create Nginx Log Exporter service file
+  template:
+    src: nginx-log-exporter.service.j2
+    dest: /etc/systemd/system/nginx-log-exporter.service
+  notify:
+    - daemon-reload
+    - restart nginx-log-exporter
+
+- name: Enable and start Nginx Log Exporter
+  systemd:
+    name: nginx-log-exporter
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/nginx-log-exporter/templates/nginx-log-exporter.service.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 279 байт
+--- Содержимое ---
+[Unit]
+Description=Prometheus Nginx Log Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+ExecStart=/usr/bin/prometheus-nginxlog-exporter -config-file /etc/nginx-log-exporter.hcl
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+
+
+=== Файл: ./roles/nginx-log-exporter/templates/nginx-log-exporter.hcl.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 539 байт
+--- Содержимое ---
+listen {
+  port = {{ nginx_log_exporter_port }}
+  address = "0.0.0.0"
+}
+
+namespace "{{ nginx_log_exporter_namespace }}" {
+  source = {
+    files = [
+      "/var/log/nginx/access.log"
+    ]
+  }
+  
+  format = "{{ nginx_log_exporter_format }}"
+  
+  {% for metric in nginx_log_exporter_metrics %}
+  metrics {
+    name = "{{ metric.name }}"
+    type = "{{ metric.type }}"
+    help = "{{ metric.help }}"
+    match {
+      {% for key, value in metric.match.items() %}
+      {{ key }} = "{{ value }}"
+      {% endfor %}
+    }
+  }
+  {% endfor %}
+}
+
+
+=== Файл: ./roles/nginx-log-exporter/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 180 байт
+--- Содержимое ---
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart nginx-log-exporter
+  systemd:
+    name: nginx-log-exporter
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/common/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1689 байт
+--- Содержимое ---
+---
+- name: Wait for apt to be unlocked
+  shell: |
+    timeout 300 bash -c 'while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 1; done'
+  become: yes
+  register: apt_wait
+  until: apt_wait.rc == 0
+  retries: 10
+  delay: 30
+  ignore_errors: yes
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install basic packages
+  apt:
+    name:
+      - curl
+      - wget
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - net-tools
+      - htop
+      - iotop
+      - iftop
+      - jq
+      - python3-pip
+    state: present
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Configure NTP
+  copy:
+    dest: /etc/systemd/timesyncd.conf
+    content: |
+      [Time]
+      NTP={{ ntp_servers | join(' ') }}
+      FallbackNTP=ntp.ubuntu.com
+  notify: restart systemd-timesyncd
+
+- name: Enable and start systemd-timesyncd
+  systemd:
+    name: systemd-timesyncd
+    enabled: yes
+    state: started
+
+- name: Create admin user
+  user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    append: yes
+    shell: /bin/bash
+
+- name: Set up SSH authorized keys for admin
+  authorized_key:
+    user: "{{ admin_user }}"
+    state: present
+    key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"
+
+- name: Configure SSH to prevent root login
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+  notify: restart ssh
+
+- name: Configure SSH to use key authentication only
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+  notify: restart ssh
+
+
+=== Файл: ./roles/common/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 165 байт
+--- Содержимое ---
+---
+- name: restart ssh
+  service:
+    name: ssh
+    state: restarted
+
+- name: restart systemd-timesyncd
+  service:
+    name: systemd-timesyncd
+    state: restarted
+
+
+=== Файл: ./roles/nginx/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 677 байт
+--- Содержимое ---
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Create website directory
+  file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Deploy static website files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  loop: "{{ website_files }}"
+  loop_control:
+    label: "{{ item.src }}"
+
+- name: Configure Nginx site
+  template:
+    src: nginx-site.conf.j2
+    dest: /etc/nginx/sites-available/default
+  notify: restart nginx
+
+- name: Ensure Nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+
+=== Файл: ./roles/nginx/templates/nginx-site.conf.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 585 байт
+--- Содержимое ---
+server {
+    listen {{ nginx_sites.default.listen }} default_server;
+    listen [::]:{{ nginx_sites.default.listen }} default_server;
+    
+    server_name {{ nginx_sites.default.server_name }};
+    root {{ nginx_sites.default.root }};
+    index {{ nginx_sites.default.index }};
+    
+    access_log {{ nginx_sites.default.access_log }};
+    error_log {{ nginx_sites.default.error_log }};
+    
+    location / {
+        try_files $uri $uri/ =404;
+    }
+    
+    location /status {
+        stub_status;
+        allow 127.0.0.1;
+        allow {{ prometheus_ip }};
+        deny all;
+    }
+}
+
+
+=== Файл: ./roles/nginx/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 97 байт
+--- Содержимое ---
+---
+- name: restart nginx
+  systemd:
+    name: nginx
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./roles/nginx/files/style.css ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 2267 байт
+--- Содержимое ---
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    color: white;
+    padding: 40px 20px;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    font-size: 3em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+header p {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+main {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    margin-bottom: 40px;
+}
+
+section {
+    margin-bottom: 40px;
+}
+
+
+
+=== Файл: ./roles/nginx/files/index.html ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 3125 байт
+--- Содержимое ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure Project</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Infrastructure Project</h1>
+            <p>Welcome to the deployed web application</p>
+        </header>
+        
+        <main>
+            <section class="server-info">
+                <h2>Server Information</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3>Hostname</h3>
+                        <p id="hostname">Loading...</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>IP Address</h3>
+                        <p id="ipaddress">Loading...</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>Uptime</h3>
+                        <p id="uptime">Loading...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="services">
+                <h2>Monitoring Services</h2>
+                <div class="services-grid">
+                    <a href="http://10.0.2.3:9090" class="service-card" target="_blank">
+                        <h3>📊 Prometheus</h3>
+                        <p>Metrics collection</p>
+                    </a>
+                    <a href="http://178.154.241.166:3000" class="service-card" target="_blank">
+                        <h3>📈 Grafana</h3>
+                        <p>Dashboards & visualization</p>
+                    </a>
+                    <a href="http://10.0.2.4:9200" class="service-card" target="_blank">
+                        <h3>🔍 Elasticsearch</h3>
+                        <p>Log storage</p>
+                    </a>
+                    <a href="http://178.154.224.134:5601" class="service-card" target="_blank">
+
+
+=== Файл: ./roles/node-exporter/tasks/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 543 байт
+--- Содержимое ---
+---
+- name: Download Node Exporter package
+  get_url:
+    url: "{{ node_exporter_deb_url }}"
+    dest: /tmp/{{ node_exporter_package }}
+    mode: '0644'
+
+- name: Install Node Exporter
+  apt:
+    deb: /tmp/{{ node_exporter_package }}
+
+- name: Create Node Exporter service file
+  template:
+    src: node-exporter.service.j2
+    dest: /etc/systemd/system/node-exporter.service
+  notify:
+    - daemon-reload
+    - restart node-exporter
+
+- name: Enable and start Node Exporter
+  systemd:
+    name: node-exporter
+    enabled: yes
+    state: started
+
+
+=== Файл: ./roles/node-exporter/templates/node-exporter.service.j2 ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 446 байт
+--- Содержимое ---
+[Unit]
+Description=Prometheus Node Exporter
+After=network.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/bin/prometheus-node-exporter \
+  --web.listen-address=:{{ node_exporter_port }} \
+  --collector.textfile.directory=/var/lib/node_exporter/textfile_collector \
+  {% for collector in node_exporter_collectors %}--collector.{{ collector }} \
+  {% endfor %}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+
+=== Файл: ./roles/node-exporter/handlers/main.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 170 байт
+--- Содержимое ---
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart node-exporter
+  systemd:
+    name: node-exporter
+    state: restarted
+    daemon_reload: yes
+
+
+=== Файл: ./host_vars/elasticsearch.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 405 байт
+--- Содержимое ---
+---
+# Elasticsearch configuration
+elasticsearch_cluster_name: "infra-project"
+elasticsearch_node_name: "elasticsearch-01"
+elasticsearch_network_host: "0.0.0.0"
+elasticsearch_http_port: 9200
+elasticsearch_discovery_type: "single-node"
+
+# JVM settings
+elasticsearch_jvm_options:
+  - "-Xms4g"
+  - "-Xmx4g"
+
+# Index settings
+elasticsearch_indices:
+  - name: "nginx-logs-*"
+    template: "nginx-logs-template"
+
+
+=== Файл: ./host_vars/prometheus.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 578 байт
+--- Содержимое ---
+---
+# Prometheus configuration
+prometheus_scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node'
+    static_configs:
+      - targets:
+          - '10.0.2.27:9100'
+          - '10.0.3.19:9100'
+          - '10.0.2.3:9100'
+          - '10.0.2.4:9100'
+          - '178.154.241.166:9100'
+          - '178.154.224.134:9100'
+
+  - job_name: 'nginx'
+    static_configs:
+      - targets:
+          - '10.0.2.27:4040'
+          - '10.0.3.19:4040'
+
+prometheus_retention_time: "15d"
+prometheus_storage_retention_size: "10GB"
+
+
+=== Файл: ./directory_dump.txt ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 32762 байт
+--- Содержимое ---
+[бинарный файл или нет прав]
+
+
+=== Файл: ./group_vars/kibana.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 278 байт
+--- Содержимое ---
+---
+# Kibana configuration
+kibana_server_name: "kibana"
+kibana_server_host: "0.0.0.0"
+kibana_server_port: 5601
+kibana_elasticsearch_hosts:
+  - "http://{{ elasticsearch_ip }}:9200"
+
+# Index patterns
+kibana_index_patterns:
+  - pattern: "nginx-logs-*"
+    time_field: "@timestamp"
+
+
+=== Файл: ./group_vars/grafana.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 715 байт
+--- Содержимое ---
+---
+# Grafana configuration
+grafana_admin_user: "admin"
+grafana_admin_password: "admin123"  # Change in production!
+
+# Data sources
+grafana_datasources:
+  - name: "Prometheus"
+    type: "prometheus"
+    access: "proxy"
+    url: "http://{{ prometheus_ip }}:9090"
+    is_default: true
+
+# Dashboards
+grafana_dashboards:
+  - name: "Node Exporter Full"
+    url: "https://grafana.com/api/dashboards/1860/revisions/22/download"
+  - name: "Nginx Metrics"
+    url: "https://grafana.com/api/dashboards/12708/revisions/1/download"
+
+# Alert thresholds
+grafana_thresholds:
+  cpu_usage_warning: 80
+  cpu_usage_critical: 95
+  memory_usage_warning: 85
+  memory_usage_critical: 95
+  disk_usage_warning: 80
+  disk_usage_critical: 95
+
+
+=== Файл: ./group_vars/webservers.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 1283 байт
+--- Содержимое ---
+---
+# Nginx configuration
+nginx_sites:
+  default:
+    listen: "80"
+    server_name: "_"
+    root: "/var/www/html"
+    index: "index.html"
+    access_log: "/var/log/nginx/access.log"
+    error_log: "/var/log/nginx/error.log"
+
+# Static website files
+website_files:
+  - src: "index.html"
+    dest: "/var/www/html/index.html"
+  - src: "style.css"
+    dest: "/var/www/html/style.css"
+
+# Node Exporter settings
+node_exporter_enabled: true
+node_exporter_collectors:
+  - cpu
+  - meminfo
+  - diskstats
+  - netdev
+  - filesystem
+  - loadavg
+  - stat
+  - time
+  - systemd
+
+# Nginx Log Exporter settings
+nginx_log_exporter_format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"'
+nginx_log_exporter_namespace: "nginx"
+nginx_log_exporter_metrics:
+  - name: "http_response_count_total"
+    type: "counter"
+    help: "Total number of HTTP responses"
+    match:
+      status: ".*"
+  - name: "http_response_size_bytes"
+    type: "histogram"
+    help: "HTTP response size in bytes"
+    match:
+      body_bytes_sent: ".*"
+
+# Filebeat settings
+filebeat_logs:
+  - paths:
+      - "/var/log/nginx/access.log"
+    fields:
+      log_type: "nginx_access"
+  - paths:
+      - "/var/log/nginx/error.log"
+    fields:
+      log_type: "nginx_error"
+
+
+=== Файл: ./group_vars/elasticsearch.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 405 байт
+--- Содержимое ---
+---
+# Elasticsearch configuration
+elasticsearch_cluster_name: "infra-project"
+elasticsearch_node_name: "elasticsearch-01"
+elasticsearch_network_host: "0.0.0.0"
+elasticsearch_http_port: 9200
+elasticsearch_discovery_type: "single-node"
+
+# JVM settings
+elasticsearch_jvm_options:
+  - "-Xms4g"
+  - "-Xmx4g"
+
+# Index settings
+elasticsearch_indices:
+  - name: "nginx-logs-*"
+    template: "nginx-logs-template"
+
+
+=== Файл: ./group_vars/all.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 755 байт
+--- Содержимое ---
+---
+# Common settings
+timezone: "Europe/Moscow"
+ntp_servers:
+  - ntp.yandex.ru
+  - pool.ntp.org
+
+# System users
+admin_user: ubuntu
+
+# Service ports
+nginx_port: 80
+node_exporter_port: 9100
+nginx_log_exporter_port: 4040
+prometheus_port: 9090
+grafana_port: 3000
+elasticsearch_port: 9200
+kibana_port: 5601
+
+# Package versions (file names from URLs)
+elasticsearch_package: "elasticsearch-9.2.4-amd64.deb"
+kibana_package: "kibana-9.2.4-amd64.deb"
+filebeat_package: "filebeat-9.2.4-amd64.deb"
+grafana_package: "grafana_12.3.1_20271043721_linux_amd64.deb"
+node_exporter_package: "prometheus-node-exporter_1.10.2-1_amd64.deb"
+nginx_log_exporter_package: "prometheus-nginxlog-exporter_1.11.0_linux_amd64.deb"
+prometheus_package: "prometheus_2.53.5+ds1-3_amd64.deb"
+
+
+=== Файл: ./group_vars/prometheus.yml ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 625 байт
+--- Содержимое ---
+---
+# Prometheus configuration
+prometheus_scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  - job_name: 'node'
+    static_configs:
+      - targets: 
+          - '{{ web1_ip }}:9100'
+          - '{{ web2_ip }}:9100'
+          - '{{ prometheus_ip }}:9100'
+          - '{{ elasticsearch_ip }}:9100'
+          - '{{ grafana_ip }}:9100'
+          - '{{ kibana_ip }}:9100'
+  
+  - job_name: 'nginx'
+    static_configs:
+      - targets:
+          - '{{ web1_ip }}:4040'
+          - '{{ web2_ip }}:4040'
+
+prometheus_retention_time: "15d"
+prometheus_storage_retention_size: "10GB"
+
+
+=== Файл: ./ansible.cfg ===
+Разрешения: -rw-r--r--
+Владелец: root
+Размер: 377 байт
+--- Содержимое ---
+[defaults]
+inventory = inventory/production.yml
+host_key_checking = False
+retry_files_enabled = False
+gathering = smart
+fact_caching = memory
+timeout = 30
+forks = 10
+
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+control_path = ~/.ssh/ansible-%%r@%%h:%%p
+pipelining = True
+scp_if_ssh = True

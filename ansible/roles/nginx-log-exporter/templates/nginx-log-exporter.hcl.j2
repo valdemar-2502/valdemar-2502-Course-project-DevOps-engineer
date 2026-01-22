@@ -1,0 +1,27 @@
+listen {
+  port = {{ nginx_log_exporter_port }}
+  address = "0.0.0.0"
+}
+
+namespace "{{ nginx_log_exporter_namespace }}" {
+  source = {
+    files = [
+      "/var/log/nginx/access.log"
+    ]
+  }
+
+  format = "{{ nginx_log_exporter_format }}"
+
+  {% for metric in nginx_log_exporter_metrics %}
+  metrics {
+    name = "{{ metric.name }}"
+    type = "{{ metric.type }}"
+    help = "{{ metric.help }}"
+    match {
+      {% for key, value in metric.match.items() %}
+      {{ key }} = "{{ value }}"
+      {% endfor %}
+    }
+  }
+  {% endfor %}
+}

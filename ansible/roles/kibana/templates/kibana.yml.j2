@@ -1,0 +1,4 @@
+server.name: {{ kibana_server_name }}
+server.host: {{ kibana_server_host }}
+server.port: {{ kibana_server_port }}
+elasticsearch.hosts: {{ kibana_elasticsearch_hosts | to_json }}

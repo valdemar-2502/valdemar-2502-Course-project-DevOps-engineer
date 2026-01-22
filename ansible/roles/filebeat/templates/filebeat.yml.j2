@@ -1,0 +1,30 @@
+filebeat.inputs:
+  - type: filestream
+    id: nginx-access
+    enabled: true
+    paths:
+      - /var/log/nginx/access.log
+    fields:
+      log_type: "nginx_access"
+    fields_under_root: true
+
+  - type: filestream
+    id: nginx-error
+    enabled: true
+    paths:
+      - /var/log/nginx/error.log
+    fields:
+      log_type: "nginx_error"
+    fields_under_root: true
+
+output.elasticsearch:
+  hosts: ["{{ elasticsearch_ip }}:{{ elasticsearch_port }}"]
+  index: "nginx-logs"
+
+setup.ilm.enabled: false
+setup.template.enabled: true
+setup.template.name: "nginx-logs"
+setup.template.pattern: "nginx-logs-*"
+setup.template.settings:
+  index.number_of_shards: 1
+  index.number_of_replicas: 0

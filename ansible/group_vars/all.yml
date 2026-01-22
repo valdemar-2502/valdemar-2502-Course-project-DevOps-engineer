@@ -1,0 +1,18 @@
+---
+# Common settings
+timezone: "Europe/Moscow"
+ntp_servers:
+  - ntp.yandex.ru
+  - pool.ntp.org
+
+# System users
+admin_user: ubuntu
+
+# Service ports
+nginx_port: 80
+node_exporter_port: 9100
+nginx_log_exporter_port: 4040
+prometheus_port: 9090
+grafana_port: 3000
+elasticsearch_port: 9200
+kibana_port: 5601

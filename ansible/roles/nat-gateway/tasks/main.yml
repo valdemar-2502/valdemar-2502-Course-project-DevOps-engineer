@@ -1,0 +1,28 @@
+---
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Install iptables-persistent
+  apt:
+    name: iptables-persistent
+    state: present
+
+- name: Configure NAT with iptables
+  shell: |
+    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    iptables -A FORWARD -i eth0 -o eth0 -j ACCEPT
+    iptables-save > /etc/iptables/rules.v4
+
+- name: Ensure iptables rules are loaded on boot
+  copy:
+    dest: /etc/rc.local
+    content: |
+      #!/bin/bash
+      iptables-restore < /etc/iptables/rules.v4
+      exit 0
+    mode: '0755'

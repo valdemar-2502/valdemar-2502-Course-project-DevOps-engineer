@@ -1,0 +1,12 @@
+---
+# Kibana configuration
+kibana_server_name: "kibana"
+kibana_server_host: "0.0.0.0"
+kibana_server_port: 5601
+kibana_elasticsearch_hosts:
+  - "http://{{ elasticsearch_ip }}:9200"
+
+# Index patterns
+kibana_index_patterns:
+  - pattern: "nginx-logs-*"
+    time_field: "@timestamp"

@@ -1,0 +1,51 @@
+---
+- name: Configure Bastion host
+  hosts: bastion_hosts
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - nat-gateway
+
+- name: Configure Web Servers
+  hosts: webservers
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - nginx
+    - node-exporter
+    - nginx-log-exporter
+    - filebeat
+
+- name: Configure Prometheus
+  hosts: prometheus
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - prometheus
+
+- name: Configure Grafana
+  hosts: grafana
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - grafana
+
+- name: Configure Elasticsearch
+  hosts: elasticsearch
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - elasticsearch
+
+- name: Configure Kibana
+  hosts: kibana
+  become: yes
+  gather_facts: yes
+  roles:
+    - common
+    - kibana

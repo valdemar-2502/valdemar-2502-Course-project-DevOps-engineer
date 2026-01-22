@@ -1,0 +1,79 @@
+---
+- name: Final Filebeat setup
+  hosts: webservers
+  become: yes
+  vars:
+    elasticsearch_ip: "{{ hostvars['elasticsearch']['ansible_host'] }}"
+  tasks:
+    - name: Stop filebeat
+      systemd:
+        name: filebeat
+        state: stopped
+
+    - name: Configure filebeat without ILM
+      copy:
+        dest: /etc/filebeat/filebeat.yml
+        content: |
+          filebeat.inputs:
+            - type: log
+              enabled: true
+              paths:
+                - /var/log/nginx/access.log
+              fields:
+                log_type: "nginx_access"
+              fields_under_root: true
+
+            - type: log
+              enabled: true
+              paths:
+                - /var/log/nginx/error.log
+              fields:
+                log_type: "nginx_error"
+              fields_under_root: true
+
+          output.elasticsearch:
+            hosts: ["{{ elasticsearch_ip }}:9200"]
+            index: "nginx-logs"
+
+          setup.ilm.enabled: false
+          setup.template.enabled: true
+          setup.template.name: "nginx-logs"
+          setup.template.pattern: "nginx-logs-*"
+          setup.template.overwrite: true
+          setup.template.settings:
+            index.number_of_shards: 1
+            index.number_of_replicas: 0
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Setup template
+      shell: |
+        filebeat setup --template \
+          -E output.elasticsearch.hosts=['{{ elasticsearch_ip }}:9200'] \
+          -E setup.template.name="nginx-logs" \
+          -E setup.template.pattern="nginx-logs-*" \
+          -E setup.ilm.enabled=false
+      register: setup_result
+      failed_when: false
+
+    - debug:
+        msg: "Setup result: {{ setup_result.stdout_lines }}"
+
+    - name: Start filebeat
+      systemd:
+        name: filebeat
+        state: started
+        enabled: yes
+
+    - name: Test filebeat connection
+      shell: |
+        curl -XGET "http://{{ elasticsearch_ip }}:9200/nginx-logs*/_search?pretty" -H 'Content-Type: application/json' -d'
+        {
+          "query": { "match_all": {} }
+        }'
+      register: test_result
+      failed_when: false
+
+    - debug:
+        msg: "Test result: {{ test_result.stdout }}"

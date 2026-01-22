@@ -1,0 +1,30 @@
+---
+- name: Download Nginx Log Exporter package
+  get_url:
+    url: "{{ nginx_log_exporter_deb_url }}"
+    dest: /tmp/nginx-log-exporter.deb
+    mode: '0644'
+
+- name: Install Nginx Log Exporter
+  apt:
+    deb: /tmp/nginx-log-exporter.deb
+
+- name: Create Nginx Log Exporter configuration
+  template:
+    src: nginx-log-exporter.hcl.j2
+    dest: /etc/nginx-log-exporter.hcl
+  notify: restart nginx-log-exporter
+
+- name: Create Nginx Log Exporter service file
+  template:
+    src: nginx-log-exporter.service.j2
+    dest: /etc/systemd/system/nginx-log-exporter.service
+  notify:
+    - daemon-reload
+    - restart nginx-log-exporter
+
+- name: Enable and start Nginx Log Exporter
+  systemd:
+    name: nginx-log-exporter
+    enabled: yes
+    state: started

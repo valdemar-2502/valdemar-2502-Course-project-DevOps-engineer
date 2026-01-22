@@ -1,0 +1,22 @@
+server {
+    listen {{ nginx_sites.default.listen }} default_server;
+    listen [::]:{{ nginx_sites.default.listen }} default_server;
+
+    server_name {{ nginx_sites.default.server_name }};
+    root {{ nginx_sites.default.root }};
+    index {{ nginx_sites.default.index }};
+
+    access_log {{ nginx_sites.default.access_log }};
+    error_log {{ nginx_sites.default.error_log }};
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /status {
+        stub_status;
+        allow 127.0.0.1;
+        allow {{ prometheus_ip }};
+        deny all;
+    }
+}

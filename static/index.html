@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure Project</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Infrastructure Project</h1>
+            <p>High Availability Web Service with Monitoring and Logging</p>
+        </header>
+        
+        <section class="services">
+            <h2>Active Services</h2>
+            <div class="service-grid">
+                <div class="service-card">
+                    <h3>Web Server</h3>
+                    <p>Nginx serving static content</p>
+                    <div class="status active">Active</div>
+                </div>
+                <div class="service-card">
+                    <h3>Load Balancer</h3>
+                    <p>Application Load Balancer</p>
+                    <div class="status active">Active</div>
+                </div>
+                <div class="service-card">
+                    <h3>Monitoring</h3>
+                    <p>Prometheus + Grafana</p>
+                    <div class="status active">Active</div>
+                </div>
+                <div class="service-card">
+                    <h3>Logging</h3>
+                    <p>Elasticsearch + Kibana</p>
+                    <div class="status active">Active</div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="info">
+            <h2>Server Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Server:</strong> {{ server_name }}
+                </div>
+                <div class="info-item">
+                    <strong>Zone:</strong> {{ zone }}
+                </div>
+                <div class="info-item">
+                    <strong>IP Address:</strong> {{ ip_address }}
+                </div>
+                <div class="info-item">
+                    <strong>Load Balancer IP:</strong> {{ lb_ip }}
+                </div>
+            </div>
+        </section>
+        
+        <footer>
+            <p>Infrastructure Project &copy; 2024</p>
+            <p>Deployed with Terraform and Ansible</p>
+        </footer>
+    </div>
+</body>
+</html>

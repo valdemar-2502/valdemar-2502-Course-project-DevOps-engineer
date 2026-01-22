@@ -1,0 +1,44 @@
+---
+- name: Create Elasticsearch index template
+  hosts: elasticsearch
+  become: yes
+  tasks:
+    - name: Create index template for nginx logs
+      uri:
+        url: "http://localhost:9200/_index_template/nginx-logs-template"
+        method: PUT
+        body_format: json
+        body:
+          index_patterns: ["nginx-logs-*"]
+          data_stream: {}
+          template:
+            settings:
+              number_of_shards: 1
+              number_of_replicas: 0
+            mappings:
+              properties:
+                "@timestamp":
+                  type: date
+                message:
+                  type: text
+                log_type:
+                  type: keyword
+                host:
+                  type: keyword
+                nginx:
+                  properties:
+                    access:
+                      properties:
+                        remote_ip:
+                          type: ip
+                        method:
+                          type: keyword
+                        url:
+                          type: text
+                        status:
+                          type: integer
+        status_code: 200
+      register: template_result
+
+    - debug:
+        msg: "Index template created: {{ template_result.status }}"

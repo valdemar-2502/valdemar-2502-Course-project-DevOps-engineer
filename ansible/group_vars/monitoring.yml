@@ -1,0 +1,34 @@
+---
+# Grafana configuration
+grafana_admin_user: "admin"
+grafana_admin_password: "admin123"
+
+# Data sources
+grafana_datasources:
+  - name: "Prometheus"
+    type: "prometheus"
+    access: "proxy"
+    url: "http://{{ prometheus_ip }}:9090"
+    is_default: true
+
+# Dashboards
+grafana_dashboards:
+  - name: "Node Exporter Full"
+    url: "https://grafana.com/api/dashboards/1860/revisions/22/download"
+  - name: "Nginx Metrics"
+    url: "https://grafana.com/api/dashboards/12708/revisions/1/download"
+
+# Alert thresholds
+grafana_thresholds:
+  cpu_usage_warning: 80
+  cpu_usage_critical: 95
+  memory_usage_warning: 85
+  memory_usage_critical: 95
+  disk_usage_warning: 80
+  disk_usage_critical: 95
+
+# Ports
+grafana_port: 3000
+
+# Prometheus connection
+prometheus_ip: "{{ lookup('env', 'PROMETHEUS_IP') }}"

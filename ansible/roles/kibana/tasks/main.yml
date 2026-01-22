@@ -1,0 +1,63 @@
+---
+- name: Download Kibana package
+  get_url:
+    url: "{{ kibana_deb_url }}"
+    dest: /tmp/kibana.deb
+    mode: '0644'
+
+- name: Install Kibana
+  apt:
+    deb: /tmp/kibana.deb
+
+- name: Configure Kibana
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+  notify: restart kibana
+
+- name: Enable and start Kibana
+  systemd:
+    name: kibana
+    enabled: yes
+    state: started
+
+- name: Wait for Kibana to start
+  wait_for:
+    port: 5601
+    delay: 10
+    timeout: 60
+
+- name: Create Kibana index patterns via API (with kbn-xsrf header)
+  uri:
+    url: "http://localhost:5601/api/saved_objects/index-pattern/nginx-logs"
+    method: POST
+    headers:
+      kbn-xsrf: "true"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      attributes:
+        title: "nginx-logs-*"
+        timeFieldName: "@timestamp"
+    status_code: 200
+  register: kibana_result
+  until: kibana_result.status == 200
+  retries: 10
+  delay: 5
+
+- name: Set default index pattern
+  uri:
+    url: "http://localhost:5601/api/kibana/settings/defaultIndex"
+    method: POST
+    headers:
+      kbn-xsrf: "true"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      value: "nginx-logs"
+    status_code: 200
+  register: default_index_result
+  failed_when: false
+
+- debug:
+    msg: "Kibana index pattern created: {{ kibana_result.status }}, default index set: {{ default_index_result.status }}"

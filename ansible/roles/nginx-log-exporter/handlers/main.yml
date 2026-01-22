@@ -1,0 +1,10 @@
+---
+- name: daemon-reload
+  systemd:
+    daemon_reload: yes
+
+- name: restart nginx-log-exporter
+  systemd:
+    name: nginx-log-exporter
+    state: restarted
+    daemon_reload: yes

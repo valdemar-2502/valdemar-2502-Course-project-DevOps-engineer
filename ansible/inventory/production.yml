@@ -1,0 +1,57 @@
+all:
+  vars:
+    ansible_user: ubuntu
+    ansible_ssh_private_key_file: "{{ lookup('env', 'HOME') }}/.ssh/id_rsa"
+
+    # Service versions
+    elasticsearch_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/e/elasticsearch/elasticsearch-9.2.4-amd64.deb"
+    kibana_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/k/kibana/kibana-9.2.4-amd64.deb"
+    filebeat_deb_url: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/f/filebeat/filebeat-9.2.4-amd64.deb"
+    grafana_deb_url: "https://mirror.yandex.ru/mirrors/packages.grafana.com/oss/deb/pool/main/g/grafana/grafana_12.3.1_20271043721_linux_amd64.deb"
+    node_exporter_deb_url: "https://mirror.yandex.ru/debian/pool/main/p/prometheus-node-exporter/prometheus-node-exporter_1.10.2-1_amd64.deb"
+    nginx_log_exporter_deb_url: "https://github.com/martin-helmich/prometheus-nginxlog-exporter/releases/download/v1.11.0/prometheus-nginxlog-exporter_1.11.0_linux_amd64.deb"
+    prometheus_deb_url: "https://mirror.yandex.ru/debian/pool/main/p/prometheus/prometheus_2.53.5+ds1-3_amd64.deb"
+
+    # Network variables from environment
+    bastion_ip: "{{ lookup('env', 'BASTION_IP') }}"
+    web1_ip: "{{ lookup('env', 'WEB1_IP') }}"
+    web2_ip: "{{ lookup('env', 'WEB2_IP') }}"
+    prometheus_ip: "{{ lookup('env', 'PROMETHEUS_IP') }}"
+    elasticsearch_ip: "{{ lookup('env', 'ELASTICSEARCH_IP') }}"
+    grafana_ip: "{{ lookup('env', 'GRAFANA_IP') }}"
+    kibana_ip: "{{ lookup('env', 'KIBANA_IP') }}"
+
+  children:
+    bastion_hosts:
+      hosts:
+        bastion-host:
+          ansible_host: "{{ bastion_ip }}"
+
+    webservers:
+      hosts:
+        web-1:
+          ansible_host: "{{ web1_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        web-2:
+          ansible_host: "{{ web2_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+
+    monitoring:
+      hosts:
+        prometheus:
+          ansible_host: "{{ prometheus_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        grafana:
+          ansible_host: "{{ grafana_ip }}"
+          # Пробуем подключиться через bastion, если прямой не работает
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+
+    logging:
+      hosts:
+        elasticsearch:
+          ansible_host: "{{ elasticsearch_ip }}"
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'
+        kibana:
+          ansible_host: "{{ kibana_ip }}"
+          # Пробуем подключиться через bastion
+          ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ubuntu@{{ bastion_ip }}"'

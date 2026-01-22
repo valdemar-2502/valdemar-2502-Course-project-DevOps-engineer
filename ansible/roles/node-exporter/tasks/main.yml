@@ -1,0 +1,24 @@
+---
+- name: Download Node Exporter package
+  get_url:
+    url: "{{ node_exporter_deb_url }}"
+    dest: /tmp/node-exporter.deb
+    mode: '0644'
+
+- name: Install Node Exporter
+  apt:
+    deb: /tmp/node-exporter.deb
+
+- name: Create Node Exporter service file
+  template:
+    src: node-exporter.service.j2
+    dest: /etc/systemd/system/node-exporter.service
+  notify:
+    - daemon-reload
+    - restart node-exporter
+
+- name: Enable and start Node Exporter
+  systemd:
+    name: node-exporter
+    enabled: yes
+    state: started

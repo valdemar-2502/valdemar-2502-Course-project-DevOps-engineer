@@ -1,0 +1,27 @@
+---
+- name: Download Filebeat package
+  get_url:
+    url: "{{ filebeat_deb_url }}"
+    dest: /tmp/filebeat.deb
+    mode: '0644'
+
+- name: Install Filebeat
+  apt:
+    deb: /tmp/filebeat.deb
+
+- name: Configure Filebeat with filestream
+  template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+  notify: restart filebeat
+
+# Уберите или закомментируйте задачу setup, так как она вызывает проблемы
+# - name: Setup Filebeat index template
+#   command: filebeat setup --index-management
+#   become: yes
+
+- name: Enable and start Filebeat
+  systemd:
+    name: filebeat
+    enabled: yes
+    state: started

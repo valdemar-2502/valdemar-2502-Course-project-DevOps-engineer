@@ -1,0 +1,65 @@
+---
+- name: Install Java
+  apt:
+    name: openjdk-17-jdk
+    state: present
+
+- name: Download Elasticsearch package
+  get_url:
+    url: "{{ elasticsearch_deb_url }}"
+    dest: /tmp/elasticsearch.deb
+    mode: '0644'
+
+- name: Install Elasticsearch
+  apt:
+    deb: /tmp/elasticsearch.deb
+
+- name: Configure Elasticsearch
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+  notify: restart elasticsearch
+
+- name: Configure JVM options
+  copy:
+    dest: /etc/elasticsearch/jvm.options
+    content: |
+      {% for option in elasticsearch_jvm_options %}
+      {{ option }}
+      {% endfor %}
+  notify: restart elasticsearch
+
+- name: Enable and start Elasticsearch
+  systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started
+
+- name: Wait for Elasticsearch to start
+  wait_for:
+    port: 9200
+    delay: 10
+    timeout: 60
+
+- name: Create index template for nginx logs
+  uri:
+    url: "http://localhost:9200/_index_template/nginx-logs-template"
+    method: PUT
+    body_format: json
+    body:
+      index_patterns: ["nginx-logs-*"]
+      template:
+        settings:
+          number_of_shards: 1
+          number_of_replicas: 0
+        mappings:
+          properties:
+            "@timestamp":
+              type: date
+            message:
+              type: text
+            log_type:
+              type: keyword
+            host:
+              type: keyword
+    status_code: 200

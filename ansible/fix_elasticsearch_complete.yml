@@ -1,0 +1,106 @@
+---
+- name: Fix Elasticsearch completely
+  hosts: elasticsearch
+  become: yes
+  tasks:
+    - name: Stop Elasticsearch if running
+      systemd:
+        name: elasticsearch
+        state: stopped
+      ignore_errors: yes
+
+    - name: Fix permissions on config directory
+      file:
+        path: /etc/elasticsearch
+        owner: elasticsearch
+        group: elasticsearch
+        recurse: yes
+
+    - name: Create proper Elasticsearch config
+      copy:
+        dest: /etc/elasticsearch/elasticsearch.yml
+        content: |
+          cluster.name: infra-project
+          node.name: elasticsearch-01
+          path.data: /var/lib/elasticsearch
+          path.logs: /var/log/elasticsearch
+          network.host: 0.0.0.0
+          http.port: 9200
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.transport.ssl.enabled: false
+          xpack.security.http.ssl.enabled: false
+          xpack.license.self_generated.type: basic
+        owner: elasticsearch
+        group: elasticsearch
+        mode: '0644'
+
+    - name: Fix JVM options
+      copy:
+        dest: /etc/elasticsearch/jvm.options
+        content: |
+          ## JVM configuration
+          -Xms1g
+          -Xmx1g
+          ## GC configuration
+          8-13:-XX:+UseConcMarkSweepGC
+          8-13:-XX:CMSInitiatingOccupancyFraction=75
+          8-13:-XX:+UseCMSInitiatingOccupancyOnly
+          14-:-XX:+UseG1GC
+          14-:-XX:G1ReservePercent=25
+          14-:-XX:InitiatingHeapOccupancyPercent=30
+          ## logging
+          -Dlog4j2.formatMsgNoLookups=true
+          ## heap dump
+          -XX:+HeapDumpOnOutOfMemoryError
+          ## TLS
+          -Djava.security.egd=file:/dev/urandom
+        owner: elasticsearch
+        group: elasticsearch
+        mode: '0644'
+
+    - name: Fix data directory permissions
+      file:
+        path: /var/lib/elasticsearch
+        state: directory
+        owner: elasticsearch
+        group: elasticsearch
+        recurse: yes
+
+    - name: Fix log directory permissions
+      file:
+        path: /var/log/elasticsearch
+        state: directory
+        owner: elasticsearch
+        group: elasticsearch
+        recurse: yes
+
+    - name: Start Elasticsearch
+      systemd:
+        name: elasticsearch
+        state: started
+        enabled: yes
+
+    - name: Wait for Elasticsearch
+      wait_for:
+        port: 9200
+        delay: 10
+        timeout: 120
+
+    - name: Check Elasticsearch health
+      shell: |
+        for i in {1..30}; do
+          if curl -s http://localhost:9200 >/dev/null; then
+            echo "Elasticsearch is up!"
+            curl -s http://localhost:9200
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "Elasticsearch failed to start"
+        exit 1
+      register: es_check
+      failed_when: false
+
+    - debug:
+        msg: "{{ es_check.stdout }}"
