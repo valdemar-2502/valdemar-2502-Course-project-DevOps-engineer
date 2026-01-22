@@ -1,38 +1,21 @@
 # Terraform
 *.tfstate
-*.tfstate.backup
+*.tfstate.*
 .terraform/
-terraform.tfvars
 *.tfvars
-*.tfplan
-variables.tf
+*.tfvars.json
 
 # Ansible
 *.retry
-.vault_pass
-ansible.cfg
-inventory.ini
-
-# SSH keys
-*.pem
-*.key
-id_rsa*
-*.pub
-ssh_keys/
-
-# Логи
-*.log
-logs/
-
-# Временные файлы
-.DS_Store
-*.tmp
-*.temp
-.cache/
+.vagrant/
 __pycache__/
+*.pyc
 
-# Конфиденциальные данные
-secrets/
+# Общее
+.DS_Store
+.idea/
+.vscode/
+*.log
 .env
-*.secret
+secrets/
 credentials*
