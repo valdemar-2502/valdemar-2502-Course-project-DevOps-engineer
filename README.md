@@ -108,9 +108,15 @@ Cоздайте ВМ, разверните на ней Elasticsearch. Устан
 ---
 Для развёртывания инфраструктуры были использованны Terraform и Ansible.
 
-При помощи terraform в yandex облаке была развёрнута сеть из 7 виртуальных машин, все на Ubuntu 22.04 LTS OS Login:
+С помощью Terraform разворачиваю все необходимые ресурсы: 
+В Yandex Cloud была развёрнута сеть из 7 виртуальных машин, все на Ubuntu 22.04 LTS OS Login:
+один VPC. Сервера web, Prometheus, Elasticsearch помещенные в приватные подсети. Сервера Grafana, Kibana, Network Load Balancer определенны в публичную подсеть.
+Виртуальные машины web-1 и web-2 также располагаются в разных зонах
 
+---
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/infra-course.png)
 
+---
 web-2
 
 grafana
@@ -126,23 +132,43 @@ bastion
 elasticsearch
 
 ---
----
-С помощью Terraform разворачиваю все необходимые ресурсы:
-один VPC. Сервера web, Prometheus, Elasticsearch помещенные в приватные подсети. Сервера Grafana, Kibana, Network Load Balancer определенный в публичную подсеть.
-Виртуальные машины web-1 и web-2 также располагаются в разных зонах
-Настройте Security Groups соответствующих сервисов на входящий трафик только к нужным портам.
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course1.png)
 
+---
+Настроена Security Groups соответствующих сервисов на входящий трафик только к нужным портам.
+
+---
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course5.png)
+
+---
 Настроена ВМ с публичным адресом, открыт только один порт — ssh. Настроены все security groups на разрешение входящего ssh из этой security group. Эта вм будет реализовывает концепцию bastion host.Через нее можно подключаться по ssh ко всем хостам.
 
 ---
-![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course1.png)
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course2.png)
+
+---
+---
+Создан Network Load Balancer для распределения трафика на веб-сервера.
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course3.png)
-![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course5.png)
+
+---
+---
+Созданы сервера web, Prometheus, Elasticsearch помещенные в приватные подсети. 
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course-elastic1.png)
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course-elastic2.png)
+
+---
+А также созданы grafana и web сайт 
+
+---
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course%20grafana.png)
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/corse-website.png)
+
+Все ресурсы с публичными адресами доступны:
+http://158.160.102.192:3000 (admin/admin123) - Grafana
+http://89.169.144.143:5601 - Elasticsearch
+http://158.160.206.182 - Web сайт
+
 
 
 
