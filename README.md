@@ -166,8 +166,8 @@ elasticsearch
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/corse-website.png)
 
 Все ресурсы с публичными адресами доступны:
-http://158.160.102.192:3000 (admin/admin123) - Grafana
-http://89.169.144.143:5601 - Elasticsearch
+http://158.160.119.32:3000 (admin/admin123) - Grafana
+178.154.253.177:5601 - Elasticsearch
 http://158.160.206.182 - Web сайт
 
 
