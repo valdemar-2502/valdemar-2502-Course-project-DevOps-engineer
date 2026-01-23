@@ -148,7 +148,7 @@ elasticsearch
 
 ---
 ---
-Создан Network Load Balancer для распределения трафика на веб-сервера.
+Создан Network Load Balancer для распределения трафика на веб-сервера. Протестирован сайт curl -v 158.160.206.182:80
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course3.png)
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/cours-balance.png)
 
