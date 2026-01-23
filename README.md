@@ -125,8 +125,17 @@ bastion
 
 elasticsearch
 
-Виртуальные машины web-1 и web-2 располагаются в разных зонах
 ---
-![mamcached](https://github.com/valdemar-2502/Redis-memcached-Homework/blob/main/memcached1.png)
+---
+С помощью Terraform разворачиваю все необходимые ресурсы:
+один VPC. Сервера web, Prometheus, Elasticsearch помещенные в приватные подсети. Сервера Grafana, Kibana, Network Load Balancer определенный в публичную подсеть.
+Виртуальные машины web-1 и web-2 также располагаются в разных зонах
+Настройте Security Groups соответствующих сервисов на входящий трафик только к нужным портам.
+
+Настроена ВМ с публичным адресом, открыт только один порт — ssh. Настроены все security groups на разрешение входящего ssh из этой security group. Эта вм будет реализовывает концепцию bastion host.Через нее можно подключаться по ssh ко всем хостам.
+---
+![mamcached](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course1.png)
+
+
 
 
