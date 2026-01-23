@@ -150,6 +150,7 @@ elasticsearch
 ---
 Создан Network Load Balancer для распределения трафика на веб-сервера.
 ![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course3.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/cours-balance.png)
 
 ---
 ---
