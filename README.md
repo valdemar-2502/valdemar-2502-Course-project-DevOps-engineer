@@ -108,7 +108,7 @@ Cоздайте ВМ, разверните на ней Elasticsearch. Устан
 ---
 Для развёртывания инфраструктуры были использованны Terraform и Ansible.
 
-При помощи terraform в yandex облаке была развёрнута сеть из 7 виртуальных машин, все на ubuntu 22.04:
+При помощи terraform в yandex облаке была развёрнута сеть из 7 виртуальных машин, все на Ubuntu 22.04 LTS OS Login:
 
 
 web-2
@@ -133,8 +133,17 @@ elasticsearch
 Настройте Security Groups соответствующих сервисов на входящий трафик только к нужным портам.
 
 Настроена ВМ с публичным адресом, открыт только один порт — ssh. Настроены все security groups на разрешение входящего ssh из этой security group. Эта вм будет реализовывает концепцию bastion host.Через нее можно подключаться по ssh ко всем хостам.
+
 ---
-![mamcached](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course1.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course1.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course2.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course3.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course5.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course-elastic1.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course-elastic2.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/course%20grafana.png)
+![course](https://github.com/valdemar-2502/valdemar-2502-Course-project-DevOps-engineer/blob/main/Coursework%20screenshots/corse-website.png)
+
 
 
 
